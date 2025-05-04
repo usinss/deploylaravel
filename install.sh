@@ -305,6 +305,10 @@ fi
 echo "Running database migrations..."
 sudo -u www-data php artisan migrate --force
 
+#Initial data seed
+echo "Running database seeders..."
+sudo -u www-data php artisan db:seed --force
+
 # Optimize for production
 echo "Optimizing Laravel for production..."
 sudo -u www-data php artisan config:cache
