@@ -16,6 +16,7 @@ A collection of scripts to quickly set up and manage Laravel applications on Ubu
 
 1. Download the user creation script:
 ```bash
+
 wget https://raw.githubusercontent.com/usinss/deploylaravel/main/new_droplet_user.sh
 ```
 
@@ -23,6 +24,7 @@ wget https://raw.githubusercontent.com/usinss/deploylaravel/main/new_droplet_use
 ```bash
 chmod +x new_droplet_user.sh
 ```
+
 
 3. Execute the script to create a non-root user with sudo privileges:
 ```bash
@@ -36,9 +38,9 @@ wget https://raw.githubusercontent.com/usinss/deploylaravel/main/install.sh
 
 5. Make it executable:
 ```bash
+
 chmod +x install.sh
 ```
-
 6. Execute the script to set up Laravel deployment tools:
 ```bash
 sudo ./install.sh
@@ -55,6 +57,14 @@ Then install Laravel deployment tools (login as the new user first):
 ```bash
 wget -qO- https://raw.githubusercontent.com/usinss/deploylaravel/main/install.sh | sudo bash
 ```
+
+# Review the script
+less install.sh
+
+# Execute the script to set up Laravel deployment tools
+sudo ./install.sh
+```
+
 
 ## Security Best Practices
 
@@ -152,20 +162,8 @@ sudo chmod -R 755 /var/www/your_project
 sudo chmod -R 775 /var/www/your_project/storage /var/www/your_project/bootstrap/cache
 ```
 
-## Updating the Deployment Tools
 
-To update to the latest version:
-
-```bash
-# Download the latest version
-curl -s -o install.sh https://raw.githubusercontent.com/usinss/deploylaravel/main/install.sh
-
-# Make it executable
-chmod +x install.sh
-
-# Run the installer
-sudo ./install.sh
-```
+wget -qO- https://raw.githubuser
 
 ## Contributing
 
