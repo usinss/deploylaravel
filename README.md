@@ -1,101 +1,77 @@
 # Laravel Deployment Tools
 
-A comprehensive set of scripts for setting up and managing Laravel applications on Ubuntu 24.04 servers, with security best practices built-in.
+A collection of scripts to quickly set up and manage Laravel applications on Ubuntu 24.04 servers.
 
-## Overview
+## Features
 
-This toolset simplifies the deployment and maintenance of Laravel applications on a production server. It includes:
+- **Complete Server Setup**: Automatically installs and configures NGINX, PHP 8.3, MariaDB, and all required dependencies
+- **Security-Focused**: Includes firewall configuration (UFW), secure MySQL setup, and proper file permissions
+- **Project Management**: Easy deployment of multiple Laravel projects on a single server
+- **SSL Support**: One-command HTTPS setup using Let's Encrypt certificates
+- **Update Tool**: Simple project updates with change detection and conflict handling
 
-- **Automated server setup**: PHP, Nginx, MariaDB, and more
-- **Project deployment**: Easy setup for multiple Laravel projects
-- **HTTPS configuration**: One-command SSL setup with Let's Encrypt
-- **Security features**: Firewall configuration and user management
-- **Maintenance tools**: Project update scripts with change detection
+## Quick Start
 
-## Security First Installation (Recommended for Digital Ocean)
+### Option 1: One-Step Installation (Quick but verify sources first)
 
-When deploying on a Digital Ocean droplet (or any new server), we recommend following these security best practices:
+```bash
+# First create a non-root user with sudo privileges (recommended for new servers)
+curl -s https://raw.githubusercontent.com/usinss/deploylaravel/main/new_droplet_user.sh | sudo bash
 
-1. **Create a non-root user** first using the provided script
-2. **Then install** the Laravel deployment tools as the new user
+# Then install Laravel deployment tools (login as the new user first)
+curl -s https://raw.githubusercontent.com/usinss/deploylaravel/main/install.sh | sudo bash
+```
 
-### Step 1: Create a Non-Root User (Digital Ocean Droplets)
-
-Log in to your server as the root user, then:
+### Option 2: Download, Review, then Install (Recommended for security)
 
 ```bash
 # Download the user creation script
-wget https://raw.githubusercontent.com/yourusername/laravel-deployment-tools/main/new_droplet_user.sh
+curl -s -o new_droplet_user.sh https://raw.githubusercontent.com/usinss/deploylaravel/main/new_droplet_user.sh
 
 # Make it executable
 chmod +x new_droplet_user.sh
 
-# Run the script
+# Review the script (recommended for security)
+less new_droplet_user.sh
+
+# Execute the script to create a non-root user with sudo privileges
 sudo ./new_droplet_user.sh
-```
 
-The script will:
-- Create a new user with sudo privileges
-- Set up SSH keys for the new user
-- Configure secure permissions
-
-### Step 2: Log in as the New User
-
-After creating the new user, log out of the root account and log in as the new user:
-
-```bash
-ssh your_new_username@your_server_ip
-```
-
-### Step 3: Install Laravel Deployment Tools
-
-Now as the new user with sudo privileges, run:
-
-```bash
-# Download the installation script
-wget https://raw.githubusercontent.com/yourusername/laravel-deployment-tools/main/install.sh
+# Log in as the new user, then download the installation script
+curl -s -o install.sh https://raw.githubusercontent.com/usinss/deploylaravel/main/install.sh
 
 # Make it executable
 chmod +x install.sh
 
-# Run the installer
+# Review the script
+less install.sh
+
+# Execute the script to set up Laravel deployment tools
 sudo ./install.sh
 ```
 
-## Standard Installation (For Secure Environments)
+## Security Best Practices
 
-If you're in a secure environment or have already set up a non-root user:
+When deploying on a new server (especially Digital Ocean droplets), we recommend:
 
-```bash
-# Download the installation script
-wget https://raw.githubusercontent.com/yourusername/laravel-deployment-tools/main/install.sh
+1. **Create a non-root user first** using `new_droplet_user.sh`
+2. **Log in as the new user** with sudo privileges
+3. **Then install** the deployment tools using `install.sh`
 
-# Make it executable
-chmod +x install.sh
+This approach follows the principle of least privilege for better security.
 
-# Run the installer
-sudo ./install.sh
-```
+## Server Requirements
 
-## What Gets Installed
+- Ubuntu 24.04 LTS
+- Minimum 1GB RAM (2GB+ recommended for production)
+- 20GB+ disk space
+- Root or sudo access
 
-The installer sets up:
+## Available Commands After Installation
 
-- **Firewall (UFW)**: Configured to allow only HTTP (80), HTTPS (443), and SSH (22)
-- **Nginx**: Web server optimized for Laravel
-- **MariaDB**: Database server with secure configuration
-- **PHP 8.3**: With all extensions Laravel needs
-- **Composer**: For PHP dependency management
-- **Let's Encrypt tools**: For SSL certificates
-- **Deployment scripts**: For managing Laravel projects
+Once installation is complete, you'll have access to the following commands:
 
-## Available Commands
-
-After installation, you'll have access to these commands:
-
-### `setup-laravel-project`
-
-Sets up a new Laravel project from a Git repository.
+### Setting up a new Laravel project
 
 ```bash
 setup-laravel-project <project_name> <domain_name> <git_repo_url> [branch]
@@ -106,9 +82,7 @@ Example:
 setup-laravel-project myblog example.com git@github.com:username/blog.git main
 ```
 
-### `update-laravel-project`
-
-Updates an existing Laravel project.
+### Updating an existing Laravel project
 
 ```bash
 update-laravel-project <project_name> [branch]
@@ -119,9 +93,7 @@ Example:
 update-laravel-project myblog main
 ```
 
-### `setup-https`
-
-Sets up HTTPS for a project using Let's Encrypt.
+### Setting up HTTPS with Let's Encrypt
 
 ```bash
 setup-https <project_name> <domain_name>
@@ -132,92 +104,41 @@ Example:
 setup-https myblog example.com
 ```
 
-## Security Features
-
-This toolset implements several security best practices:
-
-- **Firewall configuration**: Only essential ports are open
-- **MariaDB security**: Automated secure setup
-- **HTTPS support**: Easy SSL certificate setup
-- **Non-root deployment**: Projects use www-data user
-- **Secure file permissions**: Properly set for Laravel directories
-- **Session security**: Secure cookie configuration
-
 ## Firewall Configuration
 
-The installer sets up UFW (Uncomplicated Firewall) with these rules:
+The installation script configures UFW (Uncomplicated Firewall) to:
 
-- **Default policy**: Deny all incoming traffic, allow all outgoing traffic
-- **SSH (Port 22)**: Allowed for secure shell access
-- **HTTP (Port 80)**: Allowed for web traffic
-- **HTTPS (Port 443)**: Allowed for secure web traffic
-
-### Important: Firewall Safety Measures
-
-The installation script includes several safety measures to prevent lockouts:
-
-1. SSH access is configured first, before any restrictive rules
-2. Verification step to confirm SSH rule was properly added
-3. Optional confirmation prompt before enabling the firewall
-4. Fallback option if SSH rule wasn't added correctly
-
-### Recovering from Firewall Lockout
+- Allow SSH (port 22)
+- Allow HTTP (port 80)
+- Allow HTTPS (port 443)
+- Block all other incoming connections
 
 If you lose SSH access after enabling the firewall:
-
-1. Access your server via your cloud provider's console (e.g., Digital Ocean's Console)
-2. Login and run: `sudo ufw disable`
-3. Reconfigure the firewall with: `sudo ufw allow 22/tcp` before enabling again
-
-### Managing the Firewall
-
-To check your firewall status:
-
-```bash
-sudo ufw status verbose
-```
-
-To allow additional ports if needed:
-
-```bash
-sudo ufw allow <port_number>/tcp
-```
-
-To disable the firewall if necessary:
-
-```bash
-sudo ufw disable
-```
+1. Access your server via your provider's console
+2. Run: `sudo ufw disable`
+3. Reconfigure with: `sudo ufw allow 22/tcp` before enabling again
 
 ## Troubleshooting
 
 ### SSH Key Issues
-
-If you have problems connecting to your Git repositories:
-
 ```bash
 # Check the SSH key
 cat /var/www/.ssh/id_ed25519.pub
 
-# Make sure you've added this key to your Git repository's deploy keys
+# Add this key to your Git repository's deploy keys
 ```
 
-### Firewall Issues
-
-If you need to access additional services:
-
+### Database Connection Issues
+If your Laravel application cannot connect to MariaDB:
 ```bash
-# Allow new port
-sudo ufw allow <port_number>/tcp
+# Check if MariaDB is running
+sudo systemctl status mariadb
 
-# Check firewall status
-sudo ufw status verbose
+# Verify database user has correct permissions
+sudo mysql -e "SHOW GRANTS FOR 'your_db_user'@'localhost';"
 ```
 
 ### Permission Problems
-
-If you encounter "Permission denied" errors:
-
 ```bash
 # Fix Laravel directory permissions
 sudo chown -R www-data:www-data /var/www/your_project
@@ -225,13 +146,13 @@ sudo chmod -R 755 /var/www/your_project
 sudo chmod -R 775 /var/www/your_project/storage /var/www/your_project/bootstrap/cache
 ```
 
-## Updating the Scripts
+## Updating the Deployment Tools
 
-To update these tools to the latest version:
+To update to the latest version:
 
 ```bash
 # Download the latest version
-wget https://raw.githubusercontent.com/yourusername/laravel-deployment-tools/main/install.sh
+curl -s -o install.sh https://raw.githubusercontent.com/usinss/deploylaravel/main/install.sh
 
 # Make it executable
 chmod +x install.sh
@@ -240,10 +161,14 @@ chmod +x install.sh
 sudo ./install.sh
 ```
 
-## License
-
-[MIT License](LICENSE)
-
-## Contributions
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+This license ensures that all modified versions of this software must also remain open source, protecting the freedom to use, modify, and share this code for everyone.
+
+For the full text of the license, please see: https://www.gnu.org/licenses/gpl-3.0.en.html
