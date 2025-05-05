@@ -10,44 +10,50 @@ A collection of scripts to quickly set up and manage Laravel applications on Ubu
 - **SSL Support**: One-command HTTPS setup using Let's Encrypt certificates
 - **Update Tool**: Simple project updates with change detection and conflict handling
 
-## Quick Start
+## Quick Installation
 
-### Option 1: One-Step Installation (Quick but verify sources first)
+### Minimal Setup Approach (Recommended)
 
+1. Download the user creation script:
 ```bash
-# First create a non-root user with sudo privileges (recommended for new servers)
-curl -s https://raw.githubusercontent.com/usinss/deploylaravel/main/new_droplet_user.sh | sudo bash
-
-# Then install Laravel deployment tools (login as the new user first)
-curl -s https://raw.githubusercontent.com/usinss/deploylaravel/main/install.sh | sudo bash
+wget https://raw.githubusercontent.com/usinss/deploylaravel/main/new_droplet_user.sh
 ```
 
-### Option 2: Download, Review, then Install (Recommended for security)
-
+2. Make it executable:
 ```bash
-# Download the user creation script
-curl -s -o new_droplet_user.sh https://raw.githubusercontent.com/usinss/deploylaravel/main/new_droplet_user.sh
-
-# Make it executable
 chmod +x new_droplet_user.sh
+```
 
-# Review the script (recommended for security)
-less new_droplet_user.sh
-
-# Execute the script to create a non-root user with sudo privileges
+3. Execute the script to create a non-root user with sudo privileges:
+```bash
 sudo ./new_droplet_user.sh
+```
 
-# Log in as the new user, then download the installation script
-curl -s -o install.sh https://raw.githubusercontent.com/usinss/deploylaravel/main/install.sh
+4. Log in as the new user, then download the installation script:
+```bash
+wget https://raw.githubusercontent.com/usinss/deploylaravel/main/install.sh
+```
 
-# Make it executable
+5. Make it executable:
+```bash
 chmod +x install.sh
+```
 
-# Review the script
-less install.sh
-
-# Execute the script to set up Laravel deployment tools
+6. Execute the script to set up Laravel deployment tools:
+```bash
 sudo ./install.sh
+```
+
+### Alternative Method (One-liner)
+
+Create a non-root user with sudo privileges:
+```bash
+wget -qO- https://raw.githubusercontent.com/usinss/deploylaravel/main/new_droplet_user.sh | sudo bash
+```
+
+Then install Laravel deployment tools (login as the new user first):
+```bash
+wget -qO- https://raw.githubusercontent.com/usinss/deploylaravel/main/install.sh | sudo bash
 ```
 
 ## Security Best Practices
