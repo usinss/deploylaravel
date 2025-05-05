@@ -1,0 +1,141 @@
+name: Server Scripts Tests
+
+on:
+  pull_request:
+    branches: [ main ]
+  # Allow manual trigger of workflow
+  workflow_dispatch:
+
+jobs:
+  shellcheck:
+    name: ShellCheck Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install ShellCheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Run ShellCheck on all shell scripts
+        run: |
+          find . -type f -name "*.sh" -exec shellcheck {} \;
+
+  bash-syntax-check:
+    name: Bash Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Verify bash syntax of all scripts
+        run: |
+          for script in $(find . -type f -name "*.sh"); do
+            echo "Checking syntax for $script"
+            bash -n "$script"
+          done
+
+  test-docker-user-creation:
+    name: Test User Creation Script
+    runs-on: ubuntu-latest
+    needs: [shellcheck, bash-syntax-check]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set execute permissions
+        run: chmod +x new_droplet_user.sh
+
+      - name: Create Docker container for testing
+        run: |
+          docker run -d --name test-container -v ${{ github.workspace }}:/scripts ubuntu:24.04 sleep infinity
+
+      - name: Update container and install sudo
+        run: |
+          docker exec test-container apt-get update
+          docker exec test-container apt-get install -y sudo
+
+      - name: Test user creation script
+        run: |
+          docker exec -i test-container bash -c "cd /scripts && echo -e 'testuser\ntestpassword\n' | sudo ./new_droplet_user.sh"
+
+      - name: Verify user was created
+        run: |
+          docker exec test-container id testuser
+          docker exec test-container groups testuser | grep sudo
+
+      - name: Clean up Docker container
+        run: docker rm -f test-container
+        if: always()
+
+  test-docker-install:
+    name: Test Installation Script
+    runs-on: ubuntu-latest
+    needs: [shellcheck, bash-syntax-check]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set execute permissions
+        run: chmod +x install.sh
+
+      - name: Create Docker container for installation test
+        run: |
+          docker run -d --name install-container -v ${{ github.workspace }}:/scripts ubuntu:24.04 sleep infinity
+
+      - name: Update container and install sudo
+        run: |
+          docker exec install-container apt-get update
+          docker exec install-container apt-get install -y sudo
+
+      - name: Create non-interactive test version of install script
+        run: |
+          cat > test_install.sh << 'EOF'
+          #!/bin/bash
+          # Modified version of install.sh for testing
+          # Makes the script non-interactive and exits after package installation
+          
+          # Create temporary modified version of the original script
+          cp /scripts/install.sh /tmp/modified_install.sh
+          
+          # Make script non-interactive
+          sed -i 's/read -p "Enter the name of your production branch/PRODUCTION_BRANCH="DEMO" # Automated test/g' /tmp/modified_install.sh
+          sed -i 's/read -p "Are you sure you want to enable the firewall now?/confirm_firewall="n" # Skip firewall for tests/g' /tmp/modified_install.sh
+          
+          # Add an early exit point after package installation
+          sed -i '/# Install Composer/a\
+          echo "AUTOMATED TEST: Package installation completed successfully!"\
+          echo "AUTOMATED TEST: Exiting early for CI testing."\
+          exit 0' /tmp/modified_install.sh
+          
+          # Run the modified script with DEBIAN_FRONTEND=noninteractive
+          export DEBIAN_FRONTEND=noninteractive
+          cd /tmp
+          chmod +x modified_install.sh
+          ./modified_install.sh
+          EOF
+          
+          chmod +x test_install.sh
+          docker cp test_install.sh install-container:/scripts/
+
+      - name: Run the modified installation script
+        run: |
+          docker exec -i install-container bash -c "cd /scripts && DEBIAN_FRONTEND=noninteractive ./test_install.sh"
+
+      - name: Verify key packages were installed
+        run: |
+          echo "Verifying nginx installation..."
+          docker exec install-container which nginx
+          
+          echo "Verifying PHP installation..."
+          docker exec install-container php --version
+          
+          echo "Verifying Git installation..."
+          docker exec install-container git --version
+          
+          echo "Verifying UFW installation..."
+          docker exec install-container ufw --version
+
+      - name: Clean up Docker container
+        run: docker rm -f install-container
+        if: always()
