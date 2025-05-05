@@ -69,7 +69,7 @@ jobs:
         if: always()
 
   test-docker-install:
-    name: Test Installation Script
+    name: Test Installation Script (Package Installation Only)
     runs-on: ubuntu-latest
     needs: [shellcheck, bash-syntax-check]
     steps:
@@ -81,6 +81,7 @@ jobs:
 
       - name: Create Docker container for installation test
         run: |
+          # Use --privileged to give more permissions for testing
           docker run -d --privileged --name install-container -v ${{ github.workspace }}:/scripts ubuntu:24.04 sleep infinity
 
       - name: Update container and install sudo
@@ -88,63 +89,86 @@ jobs:
           docker exec install-container apt-get update
           docker exec install-container apt-get install -y sudo
 
-      - name: Create modified install script for Docker environment
+      - name: Create Docker-specific test script
         run: |
-          cat > docker_install_test.sh << 'EOF'
+          cat > test_docker_install.sh << 'EOF'
           #!/bin/bash
-          # Modified installation script for Docker testing
+          # Modified version of install.sh for Docker testing
           
-          # Create a modified version of the original script
+          # Set error handling
+          set -e
+          
+          # Create a copy of the original install script
           cp /scripts/install.sh /tmp/modified_install.sh
           
-          # Fix issues with Docker testing
-          # 1. Skip the firewall configuration in Docker
-          sed -i 's/^# Install and configure Firewall (UFW)/echo "Skipping firewall setup in Docker test environment"\n# Install and configure Firewall (UFW) - SKIPPED IN TESTING/g' /tmp/modified_install.sh
-          sed -i '/^echo "Skipping firewall/,/^fi/s/^/#DOCKER_TEST: /' /tmp/modified_install.sh
+          # Modify the script to exclude problematic parts in Docker
           
-          # 2. Skip interactive prompts
-          sed -i 's/read -p "Enter the name of your production branch/PRODUCTION_BRANCH="DEMO" # Automated test/g' /tmp/modified_install.sh
+          # 1. Skip firewall configuration
+          sed -i '/^# Install and configure Firewall/,/^fi$/ s/^/# DOCKER_TEST: /' /tmp/modified_install.sh
+          
+          # 2. Add a replacement firewall section that just installs the package but doesn't configure
+          sed -i '/^# DOCKER_TEST: # Install and configure Firewall/ i\
+          # Install UFW package only (no configuration in Docker)\
+          echo "Installing Uncomplicated Firewall (UFW) package only..."\
+          sudo apt install -y ufw\
+          echo "Note: Firewall not configured in Docker test environment"\
+          ' /tmp/modified_install.sh
           
           # 3. Skip MariaDB secure installation
-          sed -i '/# Automated secure MariaDB installation/,/sudo rm \/tmp\/secure_mysql.expect/c\
-          echo "Skipping MariaDB secure installation in Docker test environment"' /tmp/modified_install.sh
+          sed -i '/^# Automated secure MariaDB installation/,/sudo rm \/tmp\/secure_mysql.expect/ s/^/# DOCKER_TEST: /' /tmp/modified_install.sh
           
-          # 4. Skip services restart at the end
-          sed -i '/# Restart services/,/sudo systemctl restart php/c\
-          echo "Skipping service restarts in Docker test environment"' /tmp/modified_install.sh
+          # 4. Skip service restarts at the end
+          sed -i '/^# Restart services/,/sudo systemctl restart php/ s/^/# DOCKER_TEST: /' /tmp/modified_install.sh
           
-          # Add an early exit point after package installation
-          sed -i '/# Install Composer/a\
-          echo "AUTOMATED TEST: Package installation completed successfully!"\
-          echo "AUTOMATED TEST: Exiting early for CI testing."\
+          # 5. Skip any interactive prompts
+          sed -i 's/read -p "Enter the name of your production branch/PRODUCTION_BRANCH="DEMO" # Automated test/g' /tmp/modified_install.sh
+          sed -i 's/read -p "Are you sure you want to enable the firewall now/confirm_firewall="n" # Skip firewall for tests/g' /tmp/modified_install.sh
+          
+          # 6. Add an early exit after package installation
+          sed -i '/# Install Composer/i\
+          # Early exit for Docker testing\
+          echo "=================================================="\
+          echo "DOCKER TEST: Package installation test completed"\
+          echo "DOCKER TEST: Exiting early - service configuration skipped"\
+          echo "=================================================="\
           exit 0' /tmp/modified_install.sh
           
           # Run the modified script
           cd /tmp
           chmod +x modified_install.sh
-          ./modified_install.sh
+          DEBIAN_FRONTEND=noninteractive ./modified_install.sh
           EOF
           
-          chmod +x docker_install_test.sh
-          docker cp docker_install_test.sh install-container:/scripts/
+          chmod +x test_docker_install.sh
+          docker cp test_docker_install.sh install-container:/scripts/
 
-      - name: Run the modified installation script
+      - name: Run the Docker-specific test script
         run: |
-          docker exec -i install-container bash -c "cd /scripts && DEBIAN_FRONTEND=noninteractive ./docker_install_test.sh"
+          docker exec install-container bash -c "cd /scripts && sudo ./test_docker_install.sh"
 
       - name: Verify key packages were installed
         run: |
-          echo "Verifying nginx installation..."
-          docker exec install-container which nginx || echo "Nginx not found"
+          echo "Verifying key package installations..."
           
-          echo "Verifying PHP installation..."
-          docker exec install-container php --version || echo "PHP not found"
+          # Check for UFW
+          echo -n "UFW: "
+          docker exec install-container which ufw || echo "Not found"
           
-          echo "Verifying Git installation..."
-          docker exec install-container git --version || echo "Git not found"
+          # Check for Nginx
+          echo -n "Nginx: "
+          docker exec install-container which nginx || echo "Not found"
           
-          echo "Verifying MariaDB client installation..."
-          docker exec install-container mariadb --version || echo "MariaDB client not found"
+          # Check for PHP
+          echo -n "PHP: "
+          docker exec install-container bash -c "php --version 2>/dev/null | head -n 1" || echo "Not found"
+          
+          # Check for Git
+          echo -n "Git: "
+          docker exec install-container which git || echo "Not found"
+          
+          # Check for MariaDB package (not the service)
+          echo -n "MariaDB Client: "
+          docker exec install-container bash -c "apt list --installed 2>/dev/null | grep -i mariadb" || echo "Not found"
 
       - name: Clean up Docker container
         run: docker rm -f install-container
