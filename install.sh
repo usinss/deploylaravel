@@ -21,6 +21,66 @@ echo "Updating system packages..."
 sudo apt update
 sudo apt upgrade -y
 
+# Install and configure Firewall (UFW)
+echo "Installing Uncomplicated Firewall (UFW)..."
+sudo apt install -y ufw
+
+echo "Configuring firewall to allow only SSH (22), HTTP (80), and HTTPS (443)..."
+# Critical: Add SSH rule first to prevent lockout
+echo "Adding SSH rule first to prevent lockout..."
+sudo ufw allow 22/tcp comment 'Allow SSH'
+
+# Check if SSH rule was added successfully
+echo "Verifying SSH rule was added correctly..."
+if sudo ufw status | grep -q "22/tcp"; then
+    echo "SSH rule confirmed successfully."
+else
+    echo "WARNING: SSH rule wasn't added correctly. For safety, not enabling firewall."
+    echo "Please manually configure UFW after installation is complete."
+    echo "You can do this by running: sudo ufw allow 22/tcp && sudo ufw enable"
+    echo ""
+    echo "Continuing with the rest of the installation..."
+    # Skip the rest of the firewall configuration for safety
+    goto_next_step=true
+fi
+
+if [ "$goto_next_step" != "true" ]; then
+    # Set default policies
+    sudo ufw default deny incoming
+    sudo ufw default allow outgoing
+
+    # Allow web ports
+    sudo ufw allow 80/tcp comment 'Allow HTTP'
+    sudo ufw allow 443/tcp comment 'Allow HTTPS'
+
+    # Safety measure: Allow user to confirm before enabling
+    echo ""
+    echo "FIREWALL SAFETY CHECK:"
+    echo "The firewall is about to be enabled with the following rules:"
+    echo " - SSH (22/tcp): ALLOWED"
+    echo " - HTTP (80/tcp): ALLOWED"
+    echo " - HTTPS (443/tcp): ALLOWED"
+    echo " - All other incoming connections: BLOCKED"
+    echo ""
+    read -p "Are you sure you want to enable the firewall now? (y/n): " confirm_firewall
+    if [[ $confirm_firewall == "y" || $confirm_firewall == "Y" ]]; then
+        echo "Enabling firewall..."
+        sudo ufw --force enable
+        sudo ufw status verbose
+        echo "Firewall is now active."
+        
+        # Add safety information
+        echo ""
+        echo "IMPORTANT: If you lose connection to this server after enabling the firewall,"
+        echo "you may need to access the server console directly via your provider's dashboard."
+        echo ""
+    else
+        echo "Firewall has NOT been enabled at your request."
+        echo "You can enable it later with: sudo ufw enable"
+        echo ""
+    fi
+fi
+
 # Install NGINX
 echo "Installing NGINX..."
 sudo apt install -y nginx
