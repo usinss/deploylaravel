@@ -369,6 +369,10 @@ sudo -u www-data php artisan migrate --force
 echo "Running database seeders..."
 sudo -u www-data php artisan db:seed --force
 
+#build js and css
+sudo -u www-data npm ic
+sudo -u www-data npm run build
+
 # Optimize for production
 echo "Optimizing Laravel for production..."
 sudo -u www-data php artisan config:cache
@@ -479,6 +483,10 @@ sudo -u www-data composer install --no-dev --optimize-autoloader
 # Run migrations
 echo "Running database migrations..."
 sudo -u www-data php artisan migrate --force
+
+#re-build js and css
+sudo -u www-data npm ic
+sudo -u www-data npm run build
 
 # Clear and rebuild cache
 echo "Clearing and rebuilding cache..."
