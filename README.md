@@ -170,7 +170,7 @@ The `laravel-serve` utility is a development tool that helps you quickly start a
 Install the utility with a single command:
 
 ```bash
-curl -s https://raw.githubusercontent.com/usinss/deploylaravel/main/misc/laravel-serve/setup.sh | bash
+curl -s https://raw.githubusercontent.com/usinss/deploylaravel/main/misc/laravel-serve/install.sh | bash
 ```
 
 The installer supports two installation methods:
