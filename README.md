@@ -9,6 +9,7 @@ A collection of scripts to quickly set up and manage Laravel applications on Ubu
 - **Project Management**: Easy deployment of multiple Laravel projects on a single server
 - **SSL Support**: One-command HTTPS setup using Let's Encrypt certificates
 - **Update Tool**: Simple project updates with change detection and conflict handling
+- **Development Utilities**: Includes tools for easier local development workflow
 
 ## Quick Installation
 
@@ -151,6 +152,40 @@ sudo chown -R www-data:www-data /var/www/your_project
 sudo chmod -R 755 /var/www/your_project
 sudo chmod -R 775 /var/www/your_project/storage /var/www/your_project/bootstrap/cache
 ```
+
+## Development Utilities
+
+### Laravel Serve Utility
+
+The `laravel-serve` utility is a development tool that helps you quickly start a Laravel project with a clean development environment. It:
+
+- Clears all Laravel caches
+- Rebuilds caches for optimal performance
+- Installs npm dependencies
+- Builds frontend assets
+- Starts the Laravel development server
+
+#### Installation
+
+Install the utility with a single command:
+
+```bash
+curl -s https://raw.githubusercontent.com/usinss/deploylaravel/main/misc/laravel-serve/setup.sh | bash
+```
+
+The installer supports two installation methods:
+- System-wide installation (default, requires sudo)
+- User-local installation (fallback option if sudo is unavailable)
+
+#### Usage
+
+Navigate to your Laravel project directory and run:
+
+```bash
+laravel-serve
+```
+
+This will prepare your development environment and start the server at http://127.0.0.1:8000.
 
 ## Updating the Deployment Tools
 
