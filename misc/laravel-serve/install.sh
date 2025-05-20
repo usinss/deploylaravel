@@ -63,20 +63,17 @@ fi
 echo "Setting file permissions..."
 chmod +x /tmp/laravel-serve.sh
 
-# Ask for installation preference
-echo "Choose installation type:"
-echo "1) System-wide installation (requires sudo)"
-echo "2) User-local installation (adds to ~/.bashrc)"
-read -p "Enter your choice (1 or 2): " INSTALL_CHOICE
-
-if [ "$INSTALL_CHOICE" == "1" ]; then
-    # System-wide installation
-    echo "Attempting system-wide installation (may prompt for sudo password)..."
+# Check if running as root or with sudo
+if [ "$(id -u)" -eq 0 ]; then
+    # Running as root or with sudo - use system-wide installation
+    echo "Running with root privileges. Using system-wide installation."
     if install_system_wide; then
         SUCCESS=true
     else
         echo "System-wide installation failed."
-        read -p "Would you like to try a user-local installation instead? (y/n): " TRY_LOCAL
+        echo "Would you like to try a user-local installation instead? (y/n)"
+        echo "Note: For user-local installation, you should re-run the script without sudo."
+        read -p "Proceed with user-local installation for current user? (y/n): " TRY_LOCAL
         if [[ "$TRY_LOCAL" == "y" || "$TRY_LOCAL" == "Y" ]]; then
             if install_user_local; then
                 SUCCESS=true
@@ -88,17 +85,44 @@ if [ "$INSTALL_CHOICE" == "1" ]; then
             SUCCESS=false
         fi
     fi
-elif [ "$INSTALL_CHOICE" == "2" ]; then
-    # User-local installation
-    if install_user_local; then
-        SUCCESS=true
-        INSTALL_LOCAL="y"
-    else
-        SUCCESS=false
-    fi
 else
-    echo "Invalid choice. Please run the script again and select 1 or 2."
-    exit 1
+    # Not running as root - ask for installation preference
+    echo "Choose installation type:"
+    echo "1) System-wide installation (requires sudo)"
+    echo "2) User-local installation (adds to ~/.bashrc)"
+    read -p "Enter your choice (1 or 2): " INSTALL_CHOICE
+    
+    if [ "$INSTALL_CHOICE" == "1" ]; then
+        # System-wide installation
+        echo "Attempting system-wide installation (may prompt for sudo password)..."
+        if install_system_wide; then
+            SUCCESS=true
+        else
+            echo "System-wide installation failed."
+            read -p "Would you like to try a user-local installation instead? (y/n): " TRY_LOCAL
+            if [[ "$TRY_LOCAL" == "y" || "$TRY_LOCAL" == "Y" ]]; then
+                if install_user_local; then
+                    SUCCESS=true
+                    INSTALL_LOCAL="y"
+                else
+                    SUCCESS=false
+                fi
+            else
+                SUCCESS=false
+            fi
+        fi
+    elif [ "$INSTALL_CHOICE" == "2" ]; then
+        # User-local installation
+        if install_user_local; then
+            SUCCESS=true
+            INSTALL_LOCAL="y"
+        else
+            SUCCESS=false
+        fi
+    else
+        echo "Invalid choice. Please run the script again and select 1 or 2."
+        exit 1
+    fi
 fi
 
 if [ "$SUCCESS" = true ]; then

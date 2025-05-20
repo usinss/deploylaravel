@@ -169,16 +169,34 @@ The `laravel-serve` utility is a development tool that helps you quickly start a
 
 Install the utility with a single command:
 
+For system-wide installation (available to all users):
+```bash
+curl -s https://raw.githubusercontent.com/usinss/deploylaravel/main/misc/laravel-serve/install.sh | sudo bash
+```
+
+For user-local installation (only available to current user):
 ```bash
 curl -s https://raw.githubusercontent.com/usinss/deploylaravel/main/misc/laravel-serve/install.sh | bash
 ```
 
-The installer will ask you to choose between two installation methods:
+You can also download and run the script directly for an interactive installation:
+```bash
+# Download the script
+wget https://raw.githubusercontent.com/usinss/deploylaravel/main/misc/laravel-serve/install.sh
+
+# Make it executable
+chmod +x install.sh
+
+# Run the installer
+./install.sh
+```
+
+This will let you choose between:
 - System-wide installation (requires sudo)
 - User-local installation (adds to ~/.bashrc)
 
 For the user-local installation, the script will:
-- Create a ~/.bin directory in your home folder
+- Create a hidden ~/.bin directory in your home folder
 - Add this directory to your PATH in ~/.bashrc
 - Make the command available after terminal restart or sourcing ~/.bashrc
 
