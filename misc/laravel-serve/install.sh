@@ -71,57 +71,16 @@ if [ "$(id -u)" -eq 0 ]; then
         SUCCESS=true
     else
         echo "System-wide installation failed."
-        echo "Would you like to try a user-local installation instead? (y/n)"
-        echo "Note: For user-local installation, you should re-run the script without sudo."
-        read -p "Proceed with user-local installation for current user? (y/n): " TRY_LOCAL
-        if [[ "$TRY_LOCAL" == "y" || "$TRY_LOCAL" == "Y" ]]; then
-            if install_user_local; then
-                SUCCESS=true
-                INSTALL_LOCAL="y"
-            else
-                SUCCESS=false
-            fi
-        else
-            SUCCESS=false
-        fi
+        exit 1
     fi
 else
-    # Not running as root - ask for installation preference
-    echo "Choose installation type:"
-    echo "1) System-wide installation (requires sudo)"
-    echo "2) User-local installation (adds to ~/.bashrc)"
-    read -p "Enter your choice (1 or 2): " INSTALL_CHOICE
-    
-    if [ "$INSTALL_CHOICE" == "1" ]; then
-        # System-wide installation
-        echo "Attempting system-wide installation (may prompt for sudo password)..."
-        if install_system_wide; then
-            SUCCESS=true
-        else
-            echo "System-wide installation failed."
-            read -p "Would you like to try a user-local installation instead? (y/n): " TRY_LOCAL
-            if [[ "$TRY_LOCAL" == "y" || "$TRY_LOCAL" == "Y" ]]; then
-                if install_user_local; then
-                    SUCCESS=true
-                    INSTALL_LOCAL="y"
-                else
-                    SUCCESS=false
-                fi
-            else
-                SUCCESS=false
-            fi
-        fi
-    elif [ "$INSTALL_CHOICE" == "2" ]; then
-        # User-local installation
-        if install_user_local; then
-            SUCCESS=true
-            INSTALL_LOCAL="y"
-        else
-            SUCCESS=false
-        fi
+    # Not running as root - use user-local installation
+    echo "Running without root privileges. Using user-local installation."
+    if install_user_local; then
+        SUCCESS=true
+        INSTALL_LOCAL="y"
     else
-        echo "Invalid choice. Please run the script again and select 1 or 2."
-        exit 1
+        SUCCESS=false
     fi
 fi
 

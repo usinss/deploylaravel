@@ -179,21 +179,9 @@ For user-local installation (only available to current user):
 curl -s https://raw.githubusercontent.com/usinss/deploylaravel/main/misc/laravel-serve/install.sh | bash
 ```
 
-You can also download and run the script directly for an interactive installation:
-```bash
-# Download the script
-wget https://raw.githubusercontent.com/usinss/deploylaravel/main/misc/laravel-serve/install.sh
-
-# Make it executable
-chmod +x install.sh
-
-# Run the installer
-./install.sh
-```
-
-This will let you choose between:
-- System-wide installation (requires sudo)
-- User-local installation (adds to ~/.bashrc)
+The installation type is automatically determined:
+- With sudo: System-wide installation to /usr/local/bin
+- Without sudo: User-local installation to ~/.bin
 
 For the user-local installation, the script will:
 - Create a hidden ~/.bin directory in your home folder
