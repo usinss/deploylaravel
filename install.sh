@@ -103,7 +103,7 @@ sudo tee /tmp/secure_mysql.expect > /dev/null << 'EOF'
 #!/usr/bin/expect -f
 set timeout 10
 
-spawn mysql_secure_installation
+spawn mariadb-secure-installation
 
 expect "Enter current password for root (enter for none):"
 send "\r"
