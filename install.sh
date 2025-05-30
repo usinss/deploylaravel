@@ -21,6 +21,10 @@ echo "Updating system packages..."
 sudo apt update
 sudo apt upgrade -y
 
+# Set correct time zone and enable ntp
+sudo timedatectl set-timezone Europe/Riga
+sudo apt-get install ntp
+
 # Install and configure Firewall (UFW)
 echo "Installing Uncomplicated Firewall (UFW)..."
 sudo apt install -y ufw
@@ -99,7 +103,7 @@ sudo tee /tmp/secure_mysql.expect > /dev/null << 'EOF'
 #!/usr/bin/expect -f
 set timeout 10
 
-spawn mysql_secure_installation
+spawn mariadb-secure-installation
 
 expect "Enter current password for root (enter for none):"
 send "\r"
