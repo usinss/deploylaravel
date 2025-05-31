@@ -415,7 +415,7 @@ echo "Laravel project $PROJECT_NAME has been successfully set up!"
 echo "Domain: http://$DOMAIN_NAME"
 echo ""
 echo "IMPORTANT: Don't forget to:"
-echo "1. Enable HTTPS by running setup-https <project_name> <domain_name>""
+echo "1. Enable HTTPS by running setup-https <project_name> <domain_name>"
 echo "2. Consider securing your .env file with: sudo chmod 640 .env"
 EOF
 
