@@ -200,7 +200,9 @@ This will prepare your development environment and start the server at http://12
 
 ## Updating the Deployment Tools
 
-To update to the latest version:
+### Quick Update (Scripts Only)
+
+To update only the deployment scripts without reinstalling apps or regenerating configurations:
 
 ```bash
 # Download the latest version
@@ -209,9 +211,32 @@ curl -s -o install.sh https://raw.githubusercontent.com/usinss/deploylaravel/mai
 # Make it executable
 chmod +x install.sh
 
-# Run the installer
+# Run in update mode
+sudo ./install.sh --update
+```
+
+This will:
+- Update the `setup-laravel-project`, `update-laravel-project`, and `setup-https` scripts
+- Preserve existing SSH keys and configuration
+- Skip system package installation and service restarts
+- Maintain existing production branch settings
+
+### Full Reinstallation
+
+For a complete reinstallation (useful when upgrading server components):
+
+```bash
+# Download the latest version
+curl -s -o install.sh https://raw.githubusercontent.com/usinss/deploylaravel/main/install.sh
+
+# Make it executable
+chmod +x install.sh
+
+# Run the full installer
 sudo ./install.sh
 ```
+
+**Note**: The `--update` flag is recommended for most use cases as it's faster and preserves your existing configuration.
 
 ## Contributing
 

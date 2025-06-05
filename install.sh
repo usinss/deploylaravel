@@ -1,7 +1,7 @@
 #!/bin/bash
 # Laravel Deployment Tools - Main Installer
 # This script sets up a complete Laravel production environment on Ubuntu 24.04
-# Usage: ./install.sh
+# Usage: ./install.sh [--update]
 
 # Exit on any error
 set -e
@@ -10,96 +10,121 @@ set -e
 PHP_VERSION="8.3"
 DEFAULT_PROD_BRANCH="DEMO"
 
+# Parse command line arguments
+UPDATE_ONLY=false
+for arg in "$@"; do
+    case $arg in
+        --update)
+            UPDATE_ONLY=true
+            shift
+            ;;
+        *)
+            echo "Usage: $0 [--update]"
+            echo "  --update    Only update deployment scripts, skip app installation and config generation"
+            exit 1
+            ;;
+    esac
+done
+
 # Script Header
-echo "====================================================="
-echo "        Laravel Deployment Tools Installer           "
-echo "        For Ubuntu 24.04 / PHP ${PHP_VERSION}        "
-echo "====================================================="
-
-# Update system
-echo "Updating system packages..."
-sudo apt update
-sudo apt upgrade -y
-
-# Set correct time zone and enable ntp
-sudo timedatectl set-timezone Europe/Riga
-sudo apt-get install ntp
-
-# Install and configure Firewall (UFW)
-echo "Installing Uncomplicated Firewall (UFW)..."
-sudo apt install -y ufw
-
-echo "Configuring firewall to allow only SSH (22), HTTP (80), and HTTPS (443)..."
-# Critical: Add SSH rule first to prevent lockout
-echo "Adding SSH rule first to prevent lockout..."
-sudo ufw allow 22/tcp comment 'Allow SSH'
-
-# Check if SSH rule was added successfully
-echo "Verifying SSH rule was added correctly..."
-if sudo ufw status | grep -q "22/tcp"; then
-    echo "SSH rule confirmed successfully."
+if [ "$UPDATE_ONLY" = true ]; then
+    echo "====================================================="
+    echo "        Laravel Deployment Tools Updater             "
+    echo "        Updating deployment scripts only...          "
+    echo "====================================================="
 else
-    echo "WARNING: SSH rule wasn't added correctly. For safety, not enabling firewall."
-    echo "Please manually configure UFW after installation is complete."
-    echo "You can do this by running: sudo ufw allow 22/tcp && sudo ufw enable"
-    echo ""
-    echo "Continuing with the rest of the installation..."
-    # Skip the rest of the firewall configuration for safety
-    goto_next_step=true
+    echo "====================================================="
+    echo "        Laravel Deployment Tools Installer           "
+    echo "        For Ubuntu 24.04 / PHP ${PHP_VERSION}        "
+    echo "====================================================="
 fi
 
-if [ "$goto_next_step" != "true" ]; then
-    # Set default policies
-    sudo ufw default deny incoming
-    sudo ufw default allow outgoing
+# Skip system installation steps in update mode
+if [ "$UPDATE_ONLY" = false ]; then
+    # Update system
+    echo "Updating system packages..."
+    sudo apt update
+    sudo apt upgrade -y
 
-    # Allow web ports
-    sudo ufw allow 80/tcp comment 'Allow HTTP'
-    sudo ufw allow 443/tcp comment 'Allow HTTPS'
+    # Set correct time zone and enable ntp
+    sudo timedatectl set-timezone Europe/Riga
+    sudo apt-get install ntp
 
-    # Safety measure: Allow user to confirm before enabling
-    echo ""
-    echo "FIREWALL SAFETY CHECK:"
-    echo "The firewall is about to be enabled with the following rules:"
-    echo " - SSH (22/tcp): ALLOWED"
-    echo " - HTTP (80/tcp): ALLOWED"
-    echo " - HTTPS (443/tcp): ALLOWED"
-    echo " - All other incoming connections: BLOCKED"
-    echo ""
-    read -p "Are you sure you want to enable the firewall now? (y/n): " confirm_firewall
-    if [[ $confirm_firewall == "y" || $confirm_firewall == "Y" ]]; then
-        echo "Enabling firewall..."
-        sudo ufw --force enable
-        sudo ufw status verbose
-        echo "Firewall is now active."
-        
-        # Add safety information
-        echo ""
-        echo "IMPORTANT: If you lose connection to this server after enabling the firewall,"
-        echo "you may need to access the server console directly via your provider's dashboard."
-        echo ""
+    # Install and configure Firewall (UFW)
+    echo "Installing Uncomplicated Firewall (UFW)..."
+    sudo apt install -y ufw
+
+    echo "Configuring firewall to allow only SSH (22), HTTP (80), and HTTPS (443)..."
+    # Critical: Add SSH rule first to prevent lockout
+    echo "Adding SSH rule first to prevent lockout..."
+    sudo ufw allow 22/tcp comment 'Allow SSH'
+
+    # Check if SSH rule was added successfully
+    echo "Verifying SSH rule was added correctly..."
+    if sudo ufw status | grep -q "22/tcp"; then
+        echo "SSH rule confirmed successfully."
     else
-        echo "Firewall has NOT been enabled at your request."
-        echo "You can enable it later with: sudo ufw enable"
+        echo "WARNING: SSH rule wasn't added correctly. For safety, not enabling firewall."
+        echo "Please manually configure UFW after installation is complete."
+        echo "You can do this by running: sudo ufw allow 22/tcp && sudo ufw enable"
         echo ""
+        echo "Continuing with the rest of the installation..."
+        # Skip the rest of the firewall configuration for safety
+        goto_next_step=true
     fi
-fi
 
-# Install NGINX
-echo "Installing NGINX..."
-sudo apt install -y nginx
+    if [ "$goto_next_step" != "true" ]; then
+        # Set default policies
+        sudo ufw default deny incoming
+        sudo ufw default allow outgoing
 
-# Install expect for automation
-echo "Installing expect tool..."
-sudo apt install -y expect
+        # Allow web ports
+        sudo ufw allow 80/tcp comment 'Allow HTTP'
+        sudo ufw allow 443/tcp comment 'Allow HTTPS'
 
-# Install MariaDB
-echo "Installing MariaDB server and client..."
-sudo apt install -y mariadb-server mariadb-client
+        # Safety measure: Allow user to confirm before enabling
+        echo ""
+        echo "FIREWALL SAFETY CHECK:"
+        echo "The firewall is about to be enabled with the following rules:"
+        echo " - SSH (22/tcp): ALLOWED"
+        echo " - HTTP (80/tcp): ALLOWED"
+        echo " - HTTPS (443/tcp): ALLOWED"
+        echo " - All other incoming connections: BLOCKED"
+        echo ""
+        read -p "Are you sure you want to enable the firewall now? (y/n): " confirm_firewall
+        if [[ $confirm_firewall == "y" || $confirm_firewall == "Y" ]]; then
+            echo "Enabling firewall..."
+            sudo ufw --force enable
+            sudo ufw status verbose
+            echo "Firewall is now active."
+            
+            # Add safety information
+            echo ""
+            echo "IMPORTANT: If you lose connection to this server after enabling the firewall,"
+            echo "you may need to access the server console directly via your provider's dashboard."
+            echo ""
+        else
+            echo "Firewall has NOT been enabled at your request."
+            echo "You can enable it later with: sudo ufw enable"
+            echo ""
+        fi
+    fi
 
-# Automated secure MariaDB installation without changing root password
-echo "Securing MariaDB installation..."
-sudo tee /tmp/secure_mysql.expect > /dev/null << 'EOF'
+    # Install NGINX
+    echo "Installing NGINX..."
+    sudo apt install -y nginx
+
+    # Install expect for automation
+    echo "Installing expect tool..."
+    sudo apt install -y expect
+
+    # Install MariaDB
+    echo "Installing MariaDB server and client..."
+    sudo apt install -y mariadb-server mariadb-client
+
+    # Automated secure MariaDB installation without changing root password
+    echo "Securing MariaDB installation..."
+    sudo tee /tmp/secure_mysql.expect > /dev/null << 'EOF'
 #!/usr/bin/expect -f
 set timeout 10
 
@@ -143,64 +168,77 @@ expect {
 }
 EOF
 
-sudo chmod +x /tmp/secure_mysql.expect
-# Run with sudo directly
-sudo /tmp/secure_mysql.expect
-sudo rm /tmp/secure_mysql.expect
+    sudo chmod +x /tmp/secure_mysql.expect
+    # Run with sudo directly
+    sudo /tmp/secure_mysql.expect
+    sudo rm /tmp/secure_mysql.expect
 
-# Install PHP and required modules
-echo "Installing PHP ${PHP_VERSION} and required modules..."
-sudo apt install -y php${PHP_VERSION} php${PHP_VERSION}-fpm php${PHP_VERSION}-cli php${PHP_VERSION}-common php${PHP_VERSION}-mysql \
-                    php${PHP_VERSION}-zip php${PHP_VERSION}-gd php${PHP_VERSION}-mbstring php${PHP_VERSION}-curl php${PHP_VERSION}-xml \
-                    php${PHP_VERSION}-bcmath php${PHP_VERSION}-intl php${PHP_VERSION}-soap php${PHP_VERSION}-fileinfo
+    # Install PHP and required modules
+    echo "Installing PHP ${PHP_VERSION} and required modules..."
+    sudo apt install -y php${PHP_VERSION} php${PHP_VERSION}-fpm php${PHP_VERSION}-cli php${PHP_VERSION}-common php${PHP_VERSION}-mysql \
+                        php${PHP_VERSION}-zip php${PHP_VERSION}-gd php${PHP_VERSION}-mbstring php${PHP_VERSION}-curl php${PHP_VERSION}-xml \
+                        php${PHP_VERSION}-bcmath php${PHP_VERSION}-intl php${PHP_VERSION}-soap php${PHP_VERSION}-fileinfo
 
-# Install zip/unzip utilities
-echo "Installing zip/unzip utilities..."
-sudo apt install -y zip unzip
+    # Install zip/unzip utilities
+    echo "Installing zip/unzip utilities..."
+    sudo apt install -y zip unzip
 
-# Install Git
-echo "Installing Git..."
-sudo apt install -y git
+    # Install Git
+    echo "Installing Git..."
+    sudo apt install -y git
 
-# Install cURL
-echo "Installing cURL..."
-sudo apt install -y curl
+    # Install cURL
+    echo "Installing cURL..."
+    sudo apt install -y curl
 
-# Install Composer
-echo "Installing Composer..."
-curl -sS https://getcomposer.org/installer | php
-sudo mv composer.phar /usr/local/bin/composer
-sudo chmod +x /usr/local/bin/composer
+    # Install Composer
+    echo "Installing Composer..."
+    curl -sS https://getcomposer.org/installer | php
+    sudo mv composer.phar /usr/local/bin/composer
+    sudo chmod +x /usr/local/bin/composer
 
-# Ask for production branch name
-read -p "Enter the name of your production branch [${DEFAULT_PROD_BRANCH}]: " PRODUCTION_BRANCH
-PRODUCTION_BRANCH=${PRODUCTION_BRANCH:-$DEFAULT_PROD_BRANCH}
+    # Ask for production branch name
+    read -p "Enter the name of your production branch [${DEFAULT_PROD_BRANCH}]: " PRODUCTION_BRANCH
+    PRODUCTION_BRANCH=${PRODUCTION_BRANCH:-$DEFAULT_PROD_BRANCH}
 
-# Create and prepare SSH directory with proper permissions for www-data
-echo "Setting up SSH directory for www-data user..."
-sudo mkdir -p /var/www/.ssh
-sudo chown -R www-data:www-data /var/www
-sudo chown -R www-data:www-data /var/www/.ssh
-sudo chmod 700 /var/www/.ssh
+    # Create and prepare SSH directory with proper permissions for www-data
+    echo "Setting up SSH directory for www-data user..."
+    sudo mkdir -p /var/www/.ssh
+    sudo chown -R www-data:www-data /var/www
+    sudo chown -R www-data:www-data /var/www/.ssh
+    sudo chmod 700 /var/www/.ssh
 
-# Generate SSH key as www-data
-echo "Generating SSH key..."
-sudo -u www-data ssh-keygen -t ed25519 -f /var/www/.ssh/id_ed25519 -N ""
-sudo chmod 600 /var/www/.ssh/id_ed25519
+    # Generate SSH key as www-data
+    echo "Generating SSH key..."
+    sudo -u www-data ssh-keygen -t ed25519 -f /var/www/.ssh/id_ed25519 -N ""
+    sudo chmod 600 /var/www/.ssh/id_ed25519
 
-# Ensure the key is readable
-sudo chmod 644 /var/www/.ssh/id_ed25519.pub
+    # Ensure the key is readable
+    sudo chmod 644 /var/www/.ssh/id_ed25519.pub
 
-# Display the public key - use sudo to read it to avoid permission issues
-echo "Generated SSH public key for www-data user:"
-sudo cat /var/www/.ssh/id_ed25519.pub
-echo "======================================================================"
-echo "IMPORTANT: Add this public key to your Git repository's deploy keys!"
-echo "======================================================================"
+    # Display the public key - use sudo to read it to avoid permission issues
+    echo "Generated SSH public key for www-data user:"
+    sudo cat /var/www/.ssh/id_ed25519.pub
+    echo "======================================================================"
+    echo "IMPORTANT: Add this public key to your Git repository's deploy keys!"
+    echo "======================================================================"
 
-# Configure git for www-data
-sudo -u www-data git config --global user.name "www-data"
-sudo -u www-data git config --global user.email "www-data@server.com"
+    # Configure git for www-data
+    sudo -u www-data git config --global user.name "www-data"
+    sudo -u www-data git config --global user.email "www-data@server.com"
+else
+    echo "Skipping system installation steps (update mode)..."
+    # Read existing production branch from config if it exists
+    if [ -f "/etc/laravel-deploy/config" ]; then
+        echo "Reading existing configuration..."
+        source /etc/laravel-deploy/config
+        PRODUCTION_BRANCH=${PRODUCTION_BRANCH:-$DEFAULT_PROD_BRANCH}
+        echo "Using existing production branch: ${PRODUCTION_BRANCH}"
+    else
+        echo "No existing configuration found, using default production branch: ${DEFAULT_PROD_BRANCH}"
+        PRODUCTION_BRANCH=$DEFAULT_PROD_BRANCH
+    fi
+fi
 
 # Configure NGINX for Laravel
 echo "Creating NGINX server block template for Laravel..."
@@ -591,26 +629,40 @@ sudo chmod +x /usr/local/bin/setup-laravel-project
 sudo chmod +x /usr/local/bin/update-laravel-project
 sudo chmod +x /usr/local/bin/setup-https
 
-# Restart services
-echo "Restarting services..."
-sudo systemctl restart nginx
-sudo systemctl restart php${PHP_VERSION}-fpm
+# Only restart services in full installation mode
+if [ "$UPDATE_ONLY" = false ]; then
+    echo "Restarting services..."
+    sudo systemctl restart nginx
+    sudo systemctl restart php${PHP_VERSION}-fpm
+fi
 
 echo "===================================================="
-echo "    Laravel Deployment Tools Installation Complete   "
-echo "===================================================="
-echo ""
-echo "Production branch set to: ${PRODUCTION_BRANCH}"
-echo ""
-echo "Available commands:"
-echo "1. setup-laravel-project <project_name> <domain_name> <git_repo_url> [branch]"
-echo "2. update-laravel-project <project_name> [branch]"
-echo "3. setup-https <project_name> <domain_name>"
-echo ""
-echo "Don't forget to add the www-data SSH public key to your Git repository's deploy keys!"
-echo ""
-echo "To view the SSH key again:"
-echo "  cat /var/www/.ssh/id_ed25519.pub"
-echo ""
-echo "Configuration is stored in /etc/laravel-deploy/config"
+if [ "$UPDATE_ONLY" = true ]; then
+    echo "    Laravel Deployment Tools Update Complete       "
+    echo "===================================================="
+    echo ""
+    echo "Updated deployment scripts:"
+    echo "1. setup-laravel-project"
+    echo "2. update-laravel-project" 
+    echo "3. setup-https"
+    echo ""
+    echo "Configuration preserved in /etc/laravel-deploy/config"
+else
+    echo "    Laravel Deployment Tools Installation Complete   "
+    echo "===================================================="
+    echo ""
+    echo "Production branch set to: ${PRODUCTION_BRANCH}"
+    echo ""
+    echo "Available commands:"
+    echo "1. setup-laravel-project <project_name> <domain_name> <git_repo_url> [branch]"
+    echo "2. update-laravel-project <project_name> [branch]"
+    echo "3. setup-https <project_name> <domain_name>"
+    echo ""
+    echo "Don't forget to add the www-data SSH public key to your Git repository's deploy keys!"
+    echo ""
+    echo "To view the SSH key again:"
+    echo "  cat /var/www/.ssh/id_ed25519.pub"
+    echo ""
+    echo "Configuration is stored in /etc/laravel-deploy/config"
+fi
 echo "===================================================="
