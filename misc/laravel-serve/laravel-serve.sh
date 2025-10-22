@@ -83,8 +83,7 @@ if [ -f "package.json" ]; then
     # Check if npm is installed
     if ! command -v npm &> /dev/null; then
         echo "WARNING: npm is not installed but package.json exists."
-        echo "Skipping frontend build. To install Node.js and npm, run:"
-        echo "  sudo apt install -y nodejs npm"
+        echo "Skipping frontend build. Please install Node.js and npm first."
     else
         # Install npm dependencies
         echo "Installing npm dependencies..."
