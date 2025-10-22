@@ -74,22 +74,39 @@ php artisan route:cache
 echo "Caching events..."
 php artisan event:cache 2>/dev/null || true
 
-# NPM operations
-echo "==================================="
-echo "Managing frontend assets..."
-echo "==================================="
+# NPM operations (only if package.json exists)
+if [ -f "package.json" ]; then
+    echo "==================================="
+    echo "Managing frontend assets..."
+    echo "==================================="
 
-# Install npm dependencies
-echo "Installing npm dependencies..."
-npm ic
+    # Check if npm is installed
+    if ! command -v npm &> /dev/null; then
+        echo "WARNING: npm is not installed but package.json exists."
+        echo "Skipping frontend build. To install Node.js and npm, run:"
+        echo "  sudo apt install -y nodejs npm"
+    else
+        # Install npm dependencies
+        echo "Installing npm dependencies..."
+        npm install
 
-# Clean previous builds
-echo "Cleaning previous builds..."
-npm run clean 2>/dev/null || rm -rf public/build
+        # Clean previous builds
+        echo "Cleaning previous builds..."
+        npm run clean 2>/dev/null || rm -rf public/build
 
-# Build fresh assets
-echo "Building assets..."
-npm run build
+        # Build fresh assets if build script exists
+        if grep -q '"build"' package.json; then
+            echo "Building assets..."
+            npm run build
+        else
+            echo "No build script found in package.json. Skipping build."
+        fi
+    fi
+else
+    echo "==================================="
+    echo "No package.json found - skipping frontend asset build"
+    echo "==================================="
+fi
 
 # Start the server
 echo "==================================="

@@ -373,9 +373,28 @@ sudo -u www-data php artisan migrate --force
 echo "Running database seeders..."
 sudo -u www-data php artisan db:seed --force
 
-#build js and css
-sudo -u www-data npm ic
-sudo -u www-data npm run build
+# Build frontend assets if package.json exists
+if [ -f "package.json" ]; then
+    echo "Detected package.json - installing npm dependencies..."
+
+    # Check if npm is installed
+    if ! command -v npm &> /dev/null; then
+        echo "WARNING: npm is not installed. Skipping frontend build."
+        echo "To install Node.js and npm, run: sudo apt install -y nodejs npm"
+    else
+        sudo -u www-data npm install
+
+        # Check if build script exists in package.json
+        if grep -q '"build"' package.json; then
+            echo "Building frontend assets..."
+            sudo -u www-data npm run build
+        else
+            echo "No build script found in package.json. Skipping frontend build."
+        fi
+    fi
+else
+    echo "No package.json found. Skipping frontend asset build."
+fi
 
 # Optimize for production
 echo "Optimizing Laravel for production..."
@@ -488,9 +507,28 @@ sudo -u www-data composer install --no-dev --optimize-autoloader
 echo "Running database migrations..."
 sudo -u www-data php artisan migrate --force
 
-#re-build js and css
-sudo -u www-data npm ic
-sudo -u www-data npm run build
+# Rebuild frontend assets if package.json exists
+if [ -f "package.json" ]; then
+    echo "Detected package.json - updating npm dependencies..."
+
+    # Check if npm is installed
+    if ! command -v npm &> /dev/null; then
+        echo "WARNING: npm is not installed. Skipping frontend build."
+        echo "To install Node.js and npm, run: sudo apt install -y nodejs npm"
+    else
+        sudo -u www-data npm install
+
+        # Check if build script exists in package.json
+        if grep -q '"build"' package.json; then
+            echo "Rebuilding frontend assets..."
+            sudo -u www-data npm run build
+        else
+            echo "No build script found in package.json. Skipping frontend build."
+        fi
+    fi
+else
+    echo "No package.json found. Skipping frontend asset build."
+fi
 
 # Clear and rebuild cache
 echo "Clearing and rebuilding cache..."
