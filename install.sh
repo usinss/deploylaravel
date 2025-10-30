@@ -13,17 +13,59 @@ DEFAULT_PROD_BRANCH="DEMO"
 # Script Header
 echo "====================================================="
 echo "        Laravel Deployment Tools Installer           "
-echo "        For Ubuntu 24.04 / PHP ${PHP_VERSION}        "
+echo "   For Debian 13 & Ubuntu 24.04 / PHP ${PHP_VERSION} "
 echo "====================================================="
+
+# Detect OS and version
+echo "Detecting operating system..."
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS_NAME=$ID
+    OS_VERSION=$VERSION_ID
+    echo "Detected: $NAME $VERSION"
+else
+    echo "Cannot detect OS. /etc/os-release not found."
+    exit 1
+fi
+
+# Validate supported OS
+if [[ "$OS_NAME" == "debian" && "$OS_VERSION" == "13" ]]; then
+    echo "Running on Debian 13 (Trixie)"
+    IS_DEBIAN_13=true
+elif [[ "$OS_NAME" == "ubuntu" && "$OS_VERSION" == "24.04" ]]; then
+    echo "Running on Ubuntu 24.04 LTS"
+    IS_DEBIAN_13=false
+else
+    echo "WARNING: This script is designed for Debian 13 or Ubuntu 24.04 LTS."
+    echo "Detected: $OS_NAME $OS_VERSION"
+    read -p "Do you want to continue anyway? (y/n): " continue_install
+    if [[ $continue_install != "y" && $continue_install != "Y" ]]; then
+        echo "Installation cancelled."
+        exit 1
+    fi
+    IS_DEBIAN_13=false
+fi
 
 # Update system
 echo "Updating system packages..."
 sudo apt update
 sudo apt upgrade -y
 
-# Set correct time zone and enable ntp
+# Set correct time zone and install time synchronization service
+echo "Setting timezone to Europe/Riga..."
 sudo timedatectl set-timezone Europe/Riga
-sudo apt-get install ntp
+
+if [ "$IS_DEBIAN_13" = true ]; then
+    echo "Installing chrony for time synchronization (Debian 13)..."
+    sudo apt-get install -y chrony
+    sudo systemctl enable chrony
+    sudo systemctl start chrony
+    echo "Chrony installed and started successfully."
+else
+    echo "Installing ntp for time synchronization..."
+    sudo apt-get install -y ntp
+    echo "NTP installed successfully."
+fi
 
 # Install and configure Firewall (UFW)
 echo "Installing Uncomplicated Firewall (UFW)..."
@@ -171,6 +213,17 @@ echo "Installing Composer..."
 curl -sS https://getcomposer.org/installer | php
 sudo mv composer.phar /usr/local/bin/composer
 sudo chmod +x /usr/local/bin/composer
+
+# Install Node.js LTS using NVM (Node Version Manager) for www-data user
+echo "Installing Node.js LTS via NVM..."
+# Install NVM for www-data user
+sudo -u www-data bash -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash'
+# Load NVM and install latest LTS version
+sudo -u www-data bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && nvm install --lts && nvm use --lts && nvm alias default lts/*'
+# Verify installation
+echo "Verifying Node.js installation..."
+sudo -u www-data bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && echo "Node.js version: $(node --version)" && echo "npm version: $(npm --version)"'
+echo "Node.js LTS installed successfully for www-data user via NVM."
 
 # Ask for production branch name
 read -p "Enter the name of your production branch [${DEFAULT_PROD_BRANCH}]: " PRODUCTION_BRANCH
@@ -374,8 +427,9 @@ echo "Running database seeders..."
 sudo -u www-data php artisan db:seed --force
 
 #build js and css
-sudo -u www-data npm ic
-sudo -u www-data npm run build
+echo "Installing npm dependencies and building assets..."
+sudo -u www-data bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && npm install'
+sudo -u www-data bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && npm run build'
 
 # Optimize for production
 echo "Optimizing Laravel for production..."
@@ -489,8 +543,9 @@ echo "Running database migrations..."
 sudo -u www-data php artisan migrate --force
 
 #re-build js and css
-sudo -u www-data npm ic
-sudo -u www-data npm run build
+echo "Installing npm dependencies and rebuilding assets..."
+sudo -u www-data bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && npm install'
+sudo -u www-data bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && npm run build'
 
 # Clear and rebuild cache
 echo "Clearing and rebuilding cache..."
