@@ -209,17 +209,17 @@ sudo mv composer.phar /usr/local/bin/composer
 sudo chmod +x /usr/local/bin/composer
 
 # Install Node.js LTS (system-wide using NodeSource repository)
-echo "Installing Node.js LTS..."
+echo "Installing Node.js 22.x LTS..."
 # Install curl if not already installed
 sudo apt install -y curl
-# Add NodeSource repository for Node.js 20.x LTS
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+# Add NodeSource repository for Node.js 22.x LTS
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 # Install Node.js
 sudo apt install -y nodejs
 # Verify installation
 echo "Node.js version: $(node --version)"
 echo "npm version: $(npm --version)"
-echo "Node.js LTS installed successfully system-wide."
+echo "Node.js 22.x LTS installed successfully system-wide."
 
 # Ask for production branch name
 read -p "Enter the name of your production branch [${DEFAULT_PROD_BRANCH}]: " PRODUCTION_BRANCH
