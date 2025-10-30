@@ -214,16 +214,24 @@ curl -sS https://getcomposer.org/installer | php
 sudo mv composer.phar /usr/local/bin/composer
 sudo chmod +x /usr/local/bin/composer
 
-# Install Node.js LTS using NVM (Node Version Manager) for www-data user
-echo "Installing Node.js LTS via NVM..."
-# Install NVM for www-data user
-sudo -u www-data bash -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash'
-# Load NVM and install latest LTS version
-sudo -u www-data bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && nvm install --lts && nvm use --lts && nvm alias default lts/*'
+# Install Node.js LTS (system-wide using NodeSource repository)
+echo "Installing Node.js LTS..."
+# Install required packages for adding repository
+sudo apt install -y ca-certificates gnupg
+# Create directory for keyrings if it doesn't exist
+sudo mkdir -p /etc/apt/keyrings
+# Download and add NodeSource GPG key
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+# Add NodeSource repository for Node.js 20.x LTS
+NODE_MAJOR=20
+echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+# Update package list and install Node.js
+sudo apt update
+sudo apt install -y nodejs
 # Verify installation
-echo "Verifying Node.js installation..."
-sudo -u www-data bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && echo "Node.js version: $(node --version)" && echo "npm version: $(npm --version)"'
-echo "Node.js LTS installed successfully for www-data user via NVM."
+echo "Node.js version: $(node --version)"
+echo "npm version: $(npm --version)"
+echo "Node.js LTS installed successfully system-wide."
 
 # Ask for production branch name
 read -p "Enter the name of your production branch [${DEFAULT_PROD_BRANCH}]: " PRODUCTION_BRANCH
@@ -428,8 +436,8 @@ sudo -u www-data php artisan db:seed --force
 
 #build js and css
 echo "Installing npm dependencies and building assets..."
-sudo -u www-data bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && npm install'
-sudo -u www-data bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && npm run build'
+sudo -u www-data npm install
+sudo -u www-data npm run build
 
 # Optimize for production
 echo "Optimizing Laravel for production..."
@@ -544,8 +552,8 @@ sudo -u www-data php artisan migrate --force
 
 #re-build js and css
 echo "Installing npm dependencies and rebuilding assets..."
-sudo -u www-data bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && npm install'
-sudo -u www-data bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && npm run build'
+sudo -u www-data npm install
+sudo -u www-data npm run build
 
 # Clear and rebuild cache
 echo "Clearing and rebuilding cache..."
