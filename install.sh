@@ -55,17 +55,11 @@ sudo apt upgrade -y
 echo "Setting timezone to Europe/Riga..."
 sudo timedatectl set-timezone Europe/Riga
 
-if [ "$IS_DEBIAN_13" = true ]; then
-    echo "Installing chrony for time synchronization (Debian 13)..."
-    sudo apt-get install -y chrony
-    sudo systemctl enable chrony
-    sudo systemctl start chrony
-    echo "Chrony installed and started successfully."
-else
-    echo "Installing ntp for time synchronization..."
-    sudo apt-get install -y ntp
-    echo "NTP installed successfully."
-fi
+echo "Installing chrony for time synchronization..."
+sudo apt-get install -y chrony
+sudo systemctl enable chrony
+sudo systemctl start chrony
+echo "Chrony installed and started successfully."
 
 # Install and configure Firewall (UFW)
 echo "Installing Uncomplicated Firewall (UFW)..."
@@ -216,17 +210,11 @@ sudo chmod +x /usr/local/bin/composer
 
 # Install Node.js LTS (system-wide using NodeSource repository)
 echo "Installing Node.js LTS..."
-# Install required packages for adding repository
-sudo apt install -y ca-certificates gnupg
-# Create directory for keyrings if it doesn't exist
-sudo mkdir -p /etc/apt/keyrings
-# Download and add NodeSource GPG key
-curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+# Install curl if not already installed
+sudo apt install -y curl
 # Add NodeSource repository for Node.js 20.x LTS
-NODE_MAJOR=20
-echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
-# Update package list and install Node.js
-sudo apt update
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+# Install Node.js
 sudo apt install -y nodejs
 # Verify installation
 echo "Node.js version: $(node --version)"
